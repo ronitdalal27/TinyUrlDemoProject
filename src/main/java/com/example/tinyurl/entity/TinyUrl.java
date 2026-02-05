@@ -2,44 +2,46 @@ package com.example.tinyurl.entity;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Data
+@Table(
+    name = "tiny_url",
+    indexes = {
+        @Index(name = "idx_short_key", columnList = "short_key")
+    }
+)
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "tiny_url")
 public class TinyUrl {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; //this will be auto generated primary key
+    @Column(nullable = false)
+    private Long id;
 
-    @Column(name = "long_url", nullable = false ,length = 2048)
-    private String longUrl; //this is our original long url
+    @Column(name = "long_url", nullable = false, length = 2048)
+    private String longUrl;
 
-    @Column(name = "short_key", nullable = false, length = 7, unique = true)
-    private String shortKey; //this will be our short url for original long url
+    // Must be nullable during first insert
+    @Column(name = "short_key", length = 7, unique = true)
+    private String shortKey;
 
     @Column(name = "click_count", nullable = false)
-    private int clickCount; //this will keep track of number of times short url is clicked
+    private Long clickCount;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt; //this will keep track of when the short url was created
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @PrePersist
-    public void onCreate() { //method to set createdAt and clickCount before persisting, means before saving data into database
-        this.createdAt = LocalDateTime.now();    
-        this.clickCount = 0;
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.clickCount = 0L;
     }
-    
 }
