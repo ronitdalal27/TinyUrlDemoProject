@@ -8,7 +8,5 @@ public interface TinyUrlRepository extends JpaRepository<TinyUrl, Long> {
     Optional<TinyUrl> findByShortKey(String shortKey);
 
     Optional<TinyUrl> findByLongUrl(String longUrl);
-
-    boolean existsByShortKey(String shortKey);
 }
     
