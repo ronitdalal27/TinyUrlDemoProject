@@ -26,7 +26,7 @@ public class TinyUrl {
     @Column(nullable = false)
     private Long id;
 
-    @Column(name = "long_url", nullable = false, length = 2048)
+    @Column(name = "long_url", nullable = false, length = 768, unique = true)
     private String longUrl;
 
     // Must be nullable during first insert

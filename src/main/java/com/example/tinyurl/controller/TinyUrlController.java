@@ -33,7 +33,6 @@ public class TinyUrlController {
         return ResponseEntity.ok(Map.of("shortUrl", shortUrl));
     }
 
-
     // REDIRECT SHORT URL
     @GetMapping("/{shortKey}")
     public ResponseEntity<Void> redirect(@PathVariable String shortKey) {

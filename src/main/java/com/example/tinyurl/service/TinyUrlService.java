@@ -3,8 +3,12 @@ package com.example.tinyurl.service;
 import org.springframework.stereotype.Service;
 
 import com.example.tinyurl.entity.TinyUrl;
+import com.example.tinyurl.exception.InvalidUrlException;
+import com.example.tinyurl.exception.ShortUrlNotFoundException;
 import com.example.tinyurl.repository.TinyUrlRepository;
 import com.example.tinyurl.utils.Base62Util;
+import com.example.tinyurl.utils.UrlNormalizer;
+import com.example.tinyurl.utils.UrlValidator;
 
 import jakarta.transaction.Transactional;
 
@@ -19,12 +23,21 @@ public class TinyUrlService {
     @Transactional
     public String createShortUrl(String longUrl) {
 
+        // String test = null;
+        // test.length();  //just to check exception handling of genericexceptionhandler wokring fine
+
+        if (!UrlValidator.isValid(longUrl)) {
+            throw new InvalidUrlException("Invalid URL format only http and https are accpeted your current url is : " + longUrl);
+        }
+
+        String normalizedUrl = UrlNormalizer.normalize(longUrl);
+
         // If already exists, return same short URL
-        return repository.findByLongUrl(longUrl)
-                .map(tiny -> tiny.getShortKey())
+        return repository.findByLongUrl(normalizedUrl)
+                .map(TinyUrl::getShortKey)
                 .orElseGet(() -> {
                     TinyUrl tinyUrl = new TinyUrl();
-                    tinyUrl.setLongUrl(longUrl);
+                    tinyUrl.setLongUrl(normalizedUrl);
 
                     // Save first to get auto-generated ID
                     TinyUrl saved = repository.save(tinyUrl);
@@ -41,7 +54,7 @@ public class TinyUrlService {
     @Transactional
     public TinyUrl getAndIncrement(String shortKey) {
         TinyUrl tinyUrl = repository.findByShortKey(shortKey)
-                                    .orElseThrow(() -> new RuntimeException("Short URL not found"));
+                                    .orElseThrow(() -> new ShortUrlNotFoundException("Short URL not found: " + shortKey));
 
         tinyUrl.setClickCount(tinyUrl.getClickCount() + 1);
         return repository.save(tinyUrl);
