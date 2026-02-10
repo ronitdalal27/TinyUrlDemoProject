@@ -30,7 +30,7 @@ public class TinyUrl {
     private String longUrl;
 
     // Must be nullable during first insert
-    @Column(name = "short_key", length = 7, unique = true)
+    @Column(name = "short_key", length = 20, unique = true)
     private String shortKey;
 
     @Column(name = "click_count", nullable = false)

@@ -1,6 +1,7 @@
 package com.example.tinyurl.controller;
 
 import com.example.tinyurl.dto.ShortenUrlRequest;
+import com.example.tinyurl.dto.StatsResponse;
 import com.example.tinyurl.entity.TinyUrl;
 import com.example.tinyurl.service.TinyUrlService;
 import org.springframework.http.HttpHeaders;
@@ -10,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.Map;
 
-@RestController
+@RestController //i should apply requestmapping
 public class TinyUrlController {
 
     private final TinyUrlService service;
@@ -27,7 +28,7 @@ public class TinyUrlController {
             return ResponseEntity.badRequest().body(Map.of("error", "longUrl is required"));
         }
 
-        String shortKey = service.createShortUrl(request.getLongUrl());
+        String shortKey = service.createShortUrl(request.getLongUrl(), request.getCustomAlias());
         String shortUrl = "http://localhost:8080/" + shortKey;
 
         return ResponseEntity.ok(Map.of("shortUrl", shortUrl));
@@ -44,4 +45,11 @@ public class TinyUrlController {
 
         return new ResponseEntity<>(headers, HttpStatus.FOUND); // 302
     }
+
+    // GET STATS
+    @GetMapping("/api/stats/{shortKey}")
+    public ResponseEntity<StatsResponse> getStats(@PathVariable String shortKey) {
+        return ResponseEntity.ok(service.getStats(shortKey));
+    }
+
 }

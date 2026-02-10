@@ -5,4 +5,5 @@ import lombok.Data;
 @Data
 public class ShortenUrlRequest {
     private String longUrl;
+    private String customAlias;
 }
