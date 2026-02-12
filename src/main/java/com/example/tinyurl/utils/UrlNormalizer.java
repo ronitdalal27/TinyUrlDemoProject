@@ -4,8 +4,6 @@ import java.net.URI;
 
 public class UrlNormalizer {
 
-    private UrlNormalizer() {}
-
     public static String normalize(String url) {
         try {
             URI uri = new URI(url.trim());
@@ -33,8 +31,7 @@ public class UrlNormalizer {
                     null,
                     host,
                     port,
-                    path,
-                    null,
+                    path,null,
                     null
             );
 

@@ -1,5 +1,6 @@
 package com.example.tinyurl.exception;
 
+import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,11 +44,62 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of(
-                        "timestamp", LocalDateTime.now(),
-                        "status", 500,
                         "error", "Internal Server Error",
-                        "message", "Something went wrong",
+                        "message", "Something went wrong"
+                ));
+    }
+
+    @ExceptionHandler(UrlAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleUrlAlreadyExists(UrlAlreadyExistsException ex, HttpServletRequest request) {
+
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "timestamp", LocalDateTime.now(),
+                        "status", 409,
+                        "error", "Conflict",
+                        "message", ex.getMessage(),
                         "path", request.getRequestURI()
                 ));
     }
+
+    @ExceptionHandler(UrlExpiredException.class)
+    public ResponseEntity<Map<String, Object>> handleUrlExpired(UrlExpiredException ex, HttpServletRequest request) {
+
+        return ResponseEntity.status(HttpStatus.GONE)
+                .body(Map.of(
+                        "timestamp", LocalDateTime.now(),
+                        "status", 410,
+                        "error", "Gone",
+                        "message", ex.getMessage(),
+                        "path", request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleRateLimit(RateLimitExceededException ex, HttpServletRequest request) {
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(Map.of(
+                        "timestamp", LocalDateTime.now(),
+                        "status", 429,
+                        "error", "Too Many Requests",
+                        "message", ex.getMessage(),
+                        "path", request.getRequestURI()
+                ));
+    }
+
+
+    @ExceptionHandler(OptimisticLockException.class)
+    public ResponseEntity<?> handleOptimisticLock(OptimisticLockException ex, HttpServletRequest request) {
+
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "timestamp", LocalDateTime.now(),
+                        "status", 409,
+                        "error", "Conflict",
+                        "message", "Concurrent update detected. Please retry.",
+                        "path", request.getRequestURI()
+                ));
+    }
+
 }

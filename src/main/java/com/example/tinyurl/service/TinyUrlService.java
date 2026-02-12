@@ -1,53 +1,54 @@
 package com.example.tinyurl.service;
 
-import java.time.Duration;
-
-import org.springframework.data.redis.core.RedisTemplate;
+import com.example.tinyurl.exception.UrlAlreadyExistsException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.tinyurl.dto.StatsResponse;
 import com.example.tinyurl.entity.TinyUrl;
-import com.example.tinyurl.exception.InvalidUrlException;
-import com.example.tinyurl.exception.ShortUrlNotFoundException;
 import com.example.tinyurl.repository.TinyUrlRepository;
-import com.example.tinyurl.utils.Base62Util;
-import com.example.tinyurl.utils.UrlNormalizer;
-import com.example.tinyurl.utils.UrlValidator;
 import jakarta.transaction.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Isolation;
 
 @Service
 public class TinyUrlService {
-    private final TinyUrlRepository repository;
-    private final RedisTemplate<String, String> redisTemplate; // here we can change the name also, not neccessary same as redisTemplate in RedisConfig class because we are autowiring it by type not by name so it will work fine even if we change the name here but for better readability we can keep the same name
-    private static final Logger log = LoggerFactory.getLogger(TinyUrlService.class);
 
-    public TinyUrlService(TinyUrlRepository repository, RedisTemplate<String, String> redisTemplate) {
-        this.repository = repository;
-        this.redisTemplate = redisTemplate;
-    }
+    @Autowired
+    TinyUrlRepository repository;
+    @Autowired
+    UrlValidationService validationService;
+    @Autowired
+    ShortKeyService shortKeyService;
+    @Autowired
+    CacheService cacheService;
+    @Autowired
+    RedirectService redirectService;
+    @Autowired
+    StatsService statsService;
 
     @Transactional
     public String createShortUrl(String longUrl, String customAlias) {
+        String normalizedUrl = validationService.validateAndNormalizeUrl(longUrl);
 
-        // String test = null;
-        // test.length();  //just to check exception handling of genericexceptionhandler wokring fine
+        //Check if URL already exists
+        TinyUrl existing = repository.findByLongUrl(normalizedUrl).orElse(null);
 
-        if (!UrlValidator.isValid(longUrl)) {
-            throw new InvalidUrlException("Invalid URL format only http and https are accpeted your current url is : " + longUrl);
+        // STRICT RULE
+        if (existing != null) {
+
+            if (customAlias != null && !customAlias.isBlank()) {
+                throw new UrlAlreadyExistsException("This URL already has a short link. Custom alias not allowed.");
+            }
+
+            // If no alias requested → return existing
+            return existing.getShortKey();
         }
 
-        String normalizedUrl = UrlNormalizer.normalize(longUrl);
-
-        // If custom alias is provided
+        // Custom alias flow
         if (customAlias != null && !customAlias.isBlank()) {
 
-            validateCustomAlias(customAlias);
-
-            if (repository.existsByShortKey(customAlias)) {
-                throw new InvalidUrlException("Custom alias already in use, please choose another one");
-            }
+            validationService.validateCustomAlias(customAlias);
+            shortKeyService.ensureAliasIsUnique(customAlias);
 
             TinyUrl tinyUrl = new TinyUrl();
             tinyUrl.setLongUrl(normalizedUrl);
@@ -57,82 +58,40 @@ public class TinyUrlService {
             return customAlias;
         }
 
-        // If already exists, return same short URL
+        // Existing URL reuse
         return repository.findByLongUrl(normalizedUrl)
                 .map(TinyUrl::getShortKey)
                 .orElseGet(() -> {
                     TinyUrl tinyUrl = new TinyUrl();
                     tinyUrl.setLongUrl(normalizedUrl);
 
-                    // Save first to get auto-generated ID
                     TinyUrl saved = repository.save(tinyUrl);
+                    String shortKey = shortKeyService.generateFromId(saved.getId());
 
-                    // Convert ID to Base62
-                    String shortKey = Base62Util.encode(saved.getId());
                     saved.setShortKey(shortKey);
-
                     repository.save(saved);
+
                     return shortKey;
                 });
     }
 
-    @Transactional// to handle concurrent access to same short
-    public TinyUrl getAndIncrement(String shortKey) {
+    @Transactional//(isolation = Isolation.READ_COMMITTED)// to prevent dirty reads while allowing concurrent access
+    public TinyUrl redirect(String shortKey) {
 
-        //Try Redis
-        String cachedLongUrl = redisTemplate.opsForValue().get(shortKey);
+        String cached = cacheService.get(shortKey);
 
-        if (cachedLongUrl != null) {
-            log.info("Cache HIT for shortKey: {}", shortKey);
-            return incrementClickCount(shortKey);
+        TinyUrl tinyUrl = redirectService.incrementClickAndGet(shortKey);
+
+        if (cached == null) {
+            cacheService.put(shortKey, tinyUrl.getLongUrl());
         }
 
-        //Cache MISS → DB
-        log.info("Cache MISS for shortKey: {}", shortKey);
-
-        TinyUrl tinyUrl = repository.findByShortKey(shortKey)
-                .orElseThrow(() -> new ShortUrlNotFoundException("Short URL not found"));
-
-        //Store in Redis (URL only)
-        redisTemplate.opsForValue()
-                .set(shortKey, tinyUrl.getLongUrl(), Duration.ofHours(24));
-
-        //Update click count
-        tinyUrl.setClickCount(tinyUrl.getClickCount() + 1);
-        return repository.save(tinyUrl);
+        return tinyUrl;
     }
 
-    @Transactional
     public StatsResponse getStats(String shortKey) {
-
-        TinyUrl tinyUrl = repository.findByShortKey(shortKey)
-                .orElseThrow(() -> new ShortUrlNotFoundException("Short URL not found"));
-
-        return new StatsResponse(
-                "http://localhost:8080/" + shortKey,
-                tinyUrl.getLongUrl(),
-                tinyUrl.getClickCount(),
-                tinyUrl.getCreatedAt()
-        );
+        return statsService.getStats(shortKey);
     }
-
-
-    private TinyUrl incrementClickCount(String shortKey) {
-        TinyUrl tinyUrl = repository.findByShortKey(shortKey)
-                .orElseThrow(() -> new ShortUrlNotFoundException("Short URL not found"));
-    
-        tinyUrl.setClickCount(tinyUrl.getClickCount() + 1);
-        return repository.save(tinyUrl);
-    }
-
-    private void validateCustomAlias(String alias) {
-        if (!alias.matches("^[a-zA-Z0-9]{3,20}$")) {
-            throw new InvalidUrlException(
-                "Custom alias must be alphanumeric and 3–20 characters long"
-            );
-        }
-    }
-
 }
 
 /*

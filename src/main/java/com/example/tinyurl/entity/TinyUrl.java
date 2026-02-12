@@ -36,12 +36,20 @@ public class TinyUrl {
     @Column(name = "click_count", nullable = false)
     private Long clickCount;
 
+    @Version                    //added this for optimistic locking, we can use this to prevent race conditions means when multiple users try to update the same record at the same time, it will throw an exception
+    @Column(nullable = false)
+    private Long version;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "expires_at", nullable = false)
+    private LocalDateTime expiresAt;
 
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.clickCount = 0L;
+        this.expiresAt = this.createdAt.plusMinutes(10);
     }
 }
