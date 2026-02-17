@@ -1,31 +1,33 @@
-package com.example.tinyurl.service;
+package com.example.tinyurl.service.implementation;
 
 import com.example.tinyurl.exception.UrlAlreadyExistsException;
+import com.example.tinyurl.service.interfaces.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.tinyurl.dto.StatsResponse;
 import com.example.tinyurl.entity.TinyUrl;
 import com.example.tinyurl.repository.TinyUrlRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Isolation;
 
 @Service
-public class TinyUrlService {
+public class TinyUrlService implements TinyUrlServiceInterface {
 
     @Autowired
     TinyUrlRepository repository;
     @Autowired
-    UrlValidationService validationService;
+    UrlValidationServiceInterface validationService;
     @Autowired
-    ShortKeyService shortKeyService;
+    ShortKeyServiceInterface shortKeyService;
     @Autowired
-    CacheService cacheService;
+    CacheServiceInterface cacheService;
     @Autowired
-    RedirectService redirectService;
+    RedirectServiceInterface redirectService;
     @Autowired
-    StatsService statsService;
+    StatsServiceInterface statsService;
 
+    @Override
     @Transactional
     public String createShortUrl(String longUrl, String customAlias) {
         String normalizedUrl = validationService.validateAndNormalizeUrl(longUrl);
@@ -75,7 +77,8 @@ public class TinyUrlService {
                 });
     }
 
-    @Transactional//(isolation = Isolation.READ_COMMITTED)// to prevent dirty reads while allowing concurrent access
+    @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)// to prevent dirty reads while allowing concurrent access
     public TinyUrl redirect(String shortKey) {
 
         String cached = cacheService.get(shortKey);
@@ -89,6 +92,7 @@ public class TinyUrlService {
         return tinyUrl;
     }
 
+    @Override
     public StatsResponse getStats(String shortKey) {
         return statsService.getStats(shortKey);
     }

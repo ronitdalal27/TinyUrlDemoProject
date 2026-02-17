@@ -18,11 +18,8 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of(
-                        "timestamp", LocalDateTime.now(),
-                        "status", 400,
                         "error", "Bad Request",
-                        "message", ex.getMessage(),
-                        "path", request.getRequestURI()
+                        "message", ex.getMessage()
                 ));
     }
 
@@ -31,11 +28,8 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of(
-                        "timestamp", LocalDateTime.now(),
-                        "status", 404,
                         "error", "Not Found",
-                        "message", ex.getMessage(),
-                        "path", request.getRequestURI()
+                        "message", ex.getMessage()
                 ));
     }
 
@@ -54,11 +48,8 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of(
-                        "timestamp", LocalDateTime.now(),
-                        "status", 409,
                         "error", "Conflict",
-                        "message", ex.getMessage(),
-                        "path", request.getRequestURI()
+                        "message", ex.getMessage()
                 ));
     }
 
@@ -67,11 +58,8 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.GONE)
                 .body(Map.of(
-                        "timestamp", LocalDateTime.now(),
-                        "status", 410,
                         "error", "Gone",
-                        "message", ex.getMessage(),
-                        "path", request.getRequestURI()
+                        "message", ex.getMessage()
                 ));
     }
 
@@ -80,11 +68,8 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .body(Map.of(
-                        "timestamp", LocalDateTime.now(),
-                        "status", 429,
                         "error", "Too Many Requests",
-                        "message", ex.getMessage(),
-                        "path", request.getRequestURI()
+                        "message", ex.getMessage()
                 ));
     }
 
@@ -94,11 +79,9 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of(
-                        "timestamp", LocalDateTime.now(),
-                        "status", 409,
                         "error", "Conflict",
-                        "message", "Concurrent update detected. Please retry.",
-                        "path", request.getRequestURI()
+                        "message", "Concurrent update detected. Please retry."
+
                 ));
     }
 

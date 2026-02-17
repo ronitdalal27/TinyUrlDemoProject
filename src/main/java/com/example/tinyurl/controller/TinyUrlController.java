@@ -3,9 +3,9 @@ package com.example.tinyurl.controller;
 import com.example.tinyurl.dto.ShortenUrlRequest;
 import com.example.tinyurl.dto.StatsResponse;
 import com.example.tinyurl.entity.TinyUrl;
-import com.example.tinyurl.service.RateLimitService;
-import com.example.tinyurl.service.TinyUrlService;
 
+import com.example.tinyurl.service.interfaces.RateLimitServiceInterface;
+import com.example.tinyurl.service.interfaces.TinyUrlServiceInterface;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,10 +24,10 @@ public class TinyUrlController {
     private String baseUrl;
 
     @Autowired
-    TinyUrlService service;
+    TinyUrlServiceInterface service;
 
     @Autowired
-    RateLimitService rateLimitService;
+    RateLimitServiceInterface rateLimitService;
 
     // CREATE SHORT URL
     @PostMapping("/api/shorten")
@@ -38,16 +38,15 @@ public class TinyUrlController {
                     .body(Map.of("error", "longUrl is required"));
         }
 
-        String clintIp = httpRequest.getRemoteAddr();
+        String clientIp = httpRequest.getRemoteAddr();
 
-        rateLimitService.checkRateLimit(clintIp);
+        rateLimitService.checkRateLimit(clientIp);
 
-        String shortKey = service.createShortUrl(
-                request.getLongUrl(),
-                request.getCustomAlias()
-        );
+        String shortKey = service.createShortUrl(request.getLongUrl(), request.getCustomAlias());
 
-        String shortUrl = baseUrl +"/"+ shortKey;
+        String shortUrl = baseUrl.endsWith("/")
+                ? baseUrl + shortKey
+                : baseUrl + "/" + shortKey;
 
         return ResponseEntity.ok(Map.of("shortUrl", shortUrl));
     }
@@ -66,8 +65,7 @@ public class TinyUrlController {
 
     // GET STATS
     @GetMapping("/api/stats/{shortKey}")
-    public ResponseEntity<StatsResponse> getStats(
-            @PathVariable String shortKey) {
+    public ResponseEntity<StatsResponse> getStats(@PathVariable String shortKey) {
 
         return ResponseEntity.ok(service.getStats(shortKey));
     }

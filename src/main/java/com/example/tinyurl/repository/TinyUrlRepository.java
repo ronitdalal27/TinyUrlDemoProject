@@ -11,9 +11,5 @@ public interface TinyUrlRepository extends JpaRepository<TinyUrl, Long> {
     Optional<TinyUrl> findByShortKey(String shortKey);
     boolean existsByShortKey(String shortKey);
     Optional<TinyUrl> findByLongUrl(String longUrl);
-    @Modifying
-    @Query("UPDATE TinyUrl t SET t.clickCount = t.clickCount + 1 WHERE t.shortKey = :shortKey")
-    int incrementClickCount(@Param("shortKey") String shortKey);
-
 }
     

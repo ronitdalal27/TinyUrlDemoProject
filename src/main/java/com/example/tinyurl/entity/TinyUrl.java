@@ -50,6 +50,6 @@ public class TinyUrl {
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.clickCount = 0L;
-        this.expiresAt = this.createdAt.plusMinutes(10);
+        this.expiresAt = this.createdAt.plusHours(24); // setting default expiration time of short URL to 24 hours after creation
     }
 }

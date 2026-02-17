@@ -1,9 +1,10 @@
-package com.example.tinyurl.service;
+package com.example.tinyurl.service.implementation;
 
 import com.example.tinyurl.entity.TinyUrl;
 import com.example.tinyurl.exception.ShortUrlNotFoundException;
 import com.example.tinyurl.exception.UrlExpiredException;
 import com.example.tinyurl.repository.TinyUrlRepository;
+import com.example.tinyurl.service.interfaces.RedirectServiceInterface;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,11 +12,12 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
 @Service
-public class RedirectService {
+public class RedirectService implements RedirectServiceInterface {
 
     @Autowired
     TinyUrlRepository repository;
 
+    @Override
     @Transactional
     public TinyUrl incrementClickAndGet(String shortKey) {
 
